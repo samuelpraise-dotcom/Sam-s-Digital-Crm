@@ -26,7 +26,7 @@ Click the **Advanced** button or go to the **Environment** tab and add:
 ### 5. Deployment
 1.  Click **Create Web Service**.
 2.  Render will build the app (this takes 2-3 minutes).
-3.  Once it says "Live", you will get a URL like `https://digital-sam-crm.onrender.com`.
+3.  Once it says "Live", you will get a URL like `https://sam-s-digital-crm.onrender.com`.
 
 ### Important Notes for Render Free Tier:
 *   **Spin Down:** If no one uses the site for 15 minutes, Render will put the server to "sleep." The next person to visit will experience a 30-second delay while it wakes up.
