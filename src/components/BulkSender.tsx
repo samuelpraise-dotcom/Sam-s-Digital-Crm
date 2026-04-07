@@ -154,6 +154,14 @@ export default function BulkSender({ contacts, onMessageSent }: BulkSenderProps)
         if (contact) {
           const personalizedMessage = messageText.replace('{name}', contact.name);
           
+          // Real sending via extension
+          window.postMessage({
+            type: 'DS_SEND_MESSAGE',
+            phone: contact.phone,
+            text: personalizedMessage,
+            messageId: Math.random().toString(36).substr(2, 9)
+          }, '*');
+
           onMessageSent({
             contactName: contact.name,
             phone: contact.phone,

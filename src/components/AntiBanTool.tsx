@@ -310,6 +310,19 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           } else if (request.action === "rephrase") {
             rephraseWithAI(request.text).then(sendResponse);
             return true;
+          } else if (request.action === "relayToWhatsApp") {
+            chrome.tabs.query({ url: "https://web.whatsapp.com/*" }, (tabs) => {
+              if (tabs.length > 0) {
+                chrome.tabs.sendMessage(tabs[0].id, { 
+                  action: "sendMessage", 
+                  phone: request.phone,
+                  text: request.text
+                }, sendResponse);
+              } else {
+                sendResponse({ success: false, error: "WhatsApp Web tab not found. Please open it." });
+              }
+            });
+            return true;
           }
         });
 
@@ -469,6 +482,62 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           
           console.log('Scraped ' + contacts.length + ' contacts from WhatsApp Web');
           return contacts;
+        }
+
+        async function sendMessage(phone, text) {
+          if (!window.location.href.includes('web.whatsapp.com')) return { success: false, error: "Not on WhatsApp Web" };
+          
+          try {
+            console.log('Attempting to send message to:', phone);
+            
+            // 1. Find search bar
+            const searchBar = document.querySelector('div[contenteditable="true"][data-tab="3"]');
+            if (!searchBar) throw new Error("Could not find search bar. Is WhatsApp Web open and loaded?");
+            
+            searchBar.focus();
+            document.execCommand('insertText', false, phone);
+            searchBar.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Wait for contact to appear
+            await new Promise(r => setTimeout(r, 2000));
+            
+            // 2. Click contact
+            const contact = document.querySelector(\`span[title="\${phone}"], span[title*="\${phone.slice(-10)}"]\`);
+            if (!contact) {
+               const firstResult = document.querySelector('div._ak8l, div._ak8q, div[data-testid="cell-frame-container"]');
+               if (firstResult) {
+                 firstResult.click();
+               } else {
+                 throw new Error("Contact not found in search results");
+               }
+            } else {
+              contact.click();
+            }
+            
+            // Wait for chat to open
+            await new Promise(r => setTimeout(r, 1500));
+            
+            // 3. Find input box
+            const inputBox = document.querySelector('div[contenteditable="true"][data-tab="10"]');
+            if (!inputBox) throw new Error("Could not find message input box");
+            
+            inputBox.focus();
+            document.execCommand('insertText', false, text);
+            inputBox.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            await new Promise(r => setTimeout(r, 800));
+            
+            // 4. Click send
+            const sendBtn = document.querySelector('span[data-icon="send"], button[aria-label="Send"]');
+            if (!sendBtn) throw new Error("Could not find send button");
+            
+            sendBtn.click();
+            console.log('Message sent successfully to:', phone);
+            return { success: true };
+          } catch (err) {
+            console.error("Send error:", err);
+            return { success: false, error: err.message };
+          }
         }
 
         // Inject UI into WhatsApp Web
@@ -784,8 +853,28 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           } else if (request.action === "dispatchSync") {
             window.postMessage({ type: 'DS_SYNC_CONTACTS', contacts: request.contacts }, '*');
             sendResponse({ success: true });
+          } else if (request.action === "sendMessage") {
+            sendMessage(request.phone, request.text).then(sendResponse);
+            return true;
           }
           return true;
+        });
+
+        // Listen for messages from the Dashboard page
+        window.addEventListener('message', (event) => {
+          if (event.data?.type === 'DS_SEND_MESSAGE') {
+            chrome.runtime.sendMessage({ 
+              action: "relayToWhatsApp", 
+              phone: event.data.phone,
+              text: event.data.text
+            }, (response) => {
+              window.postMessage({ 
+                type: 'DS_SEND_MESSAGE_RESPONSE', 
+                response,
+                messageId: event.data.messageId 
+              }, '*');
+            });
+          }
         });
 
         // Initial injection
