@@ -393,8 +393,8 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
       
       zip.file("background.js", backgroundJs);
 
-      // Placeholder Icon (1x1 transparent pixel)
-      const iconBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+      // Thunderbolt Icon (Base64 encoded SVG)
+      const iconBase64 = "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+CiAgPHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIHJ4PSIyNCIgZmlsbD0iIzBhMGEwYyIvPgogIDxwYXRoIGQ9Ik03NSAyMEwzNSA3NWgzMGwtNSAzMyA0My01M2gtMzBsNS0zNXoiIGZpbGw9IiMwMGZmOWQiLz4KPC9zdmc+";
       zip.file("icon16.png", iconBase64, {base64: true});
       zip.file("icon48.png", iconBase64, {base64: true});
       zip.file("icon128.png", iconBase64, {base64: true});
@@ -542,13 +542,16 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
 
         // Inject UI into WhatsApp Web
         function injectUI() {
-          if (!window.location.href.includes('web.whatsapp.com')) return;
-          if (!document.body) return;
-          
-          const sidebarExists = !!document.getElementById('ds-sidebar');
-          const fabExists = !!document.getElementById('ds-fab');
-          
-          if (sidebarExists && fabExists) return;
+          try {
+            if (!window.location.href.includes('web.whatsapp.com')) return;
+            if (!document.body) return;
+            
+            const sidebarExists = !!document.getElementById('ds-sidebar');
+            const fabExists = !!document.getElementById('ds-fab');
+            
+            if (sidebarExists && fabExists) return;
+
+            console.log("Digital Sam: Injecting UI components...", { sidebarExists, fabExists });
 
           const styleId = 'ds-styles';
           if (!document.getElementById(styleId)) {
@@ -573,23 +576,25 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
             }
             #ds-sidebar.open { right: 0; }
             #ds-fab {
-              position: fixed;
-              right: 20px;
-              bottom: 20px;
-              width: 50px;
-              height: 50px;
-              background: #00ff9d;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              z-index: 10000;
-              box-shadow: 0 0 20px rgba(0,255,157,0.4);
-              font-weight: bold;
-              color: #0a0a0c;
-              transition: transform 0.2s;
-              font-size: 14px;
+              position: fixed !important;
+              right: 20px !important;
+              bottom: 20px !important;
+              width: 50px !important;
+              height: 50px !important;
+              background: #00ff9d !important;
+              border-radius: 50% !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              cursor: pointer !important;
+              z-index: 2147483647 !important;
+              box-shadow: 0 0 20px rgba(0,255,157,0.4) !important;
+              font-weight: bold !important;
+              color: #0a0a0c !important;
+              transition: transform 0.2s !important;
+              font-size: 14px !important;
+              visibility: visible !important;
+              opacity: 1 !important;
             }
             #ds-fab:hover { transform: scale(1.1); }
             .ds-header { padding: 16px; border-bottom: 1px solid #2d2e33; background: #151619; display: flex; justify-content: space-between; align-items: center; }
@@ -714,7 +719,7 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           if (!fabExists) {
             const fab = document.createElement('div');
             fab.id = 'ds-fab';
-            fab.innerHTML = 'DS';
+            fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
             fab.title = "Open Digital Sam CRM Console";
             document.body.appendChild(fab);
             
@@ -726,7 +731,10 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
               }
             };
           }
+        } catch (err) {
+          console.error("Digital Sam: Injection error:", err);
         }
+      }
 
         async function rephraseMessage() {
           const input = document.getElementById('ds-rephrase-input');
