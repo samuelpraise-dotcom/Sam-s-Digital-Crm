@@ -220,12 +220,14 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           {
             matches: ["https://web.whatsapp.com/*"],
             js: ["content.js"],
-            run_at: "document_end"
+            run_at: "document_start",
+            all_frames: true
           },
           {
             matches: ["https://*.run.app/*", "https://*.onrender.com/*", "http://localhost:*/*", currentOrigin],
             js: ["content.js"],
-            run_at: "document_end"
+            run_at: "document_start",
+            all_frames: true
           }
         ]
       };
@@ -400,6 +402,8 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
       zip.file("icon128.png", iconBase64, {base64: true});
       // Content Script
       const contentJs = `
+        console.log("Digital Sam: Content Script Initializing on " + window.location.href);
+
         const CONFIG = ${JSON.stringify(settings)};
         const ZERO_WIDTH_CHARS = ${JSON.stringify(ZERO_WIDTH_CHARS)};
         const EMOJIS = ${JSON.stringify(EMOJIS)};
@@ -444,43 +448,46 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
         function scrapeContacts() {
           const contacts = [];
           // More robust selectors for WhatsApp Web (updated for 2024/2025)
-          const chatElements = document.querySelectorAll('div[role="listitem"], div._ak8l, div._ak8q, div[data-testid="cell-frame-container"], div._ak8h, div._ak8j');
+          // WhatsApp uses many obfuscated classes, so we use multiple strategies
+          const chatElements = document.querySelectorAll('div[role="listitem"], div._ak8l, div._ak8q, div[data-testid="cell-frame-container"], div._ak8h, div._ak8j, div._ak8k');
           
           chatElements.forEach(el => {
-            // Try to find name in various elements
-            const nameEl = el.querySelector('span[title], span._ak8q, span.aria-label, div._ak8j span, span[dir="auto"]');
-            // Try to find phone or secondary info
-            const phoneEl = el.querySelector('span[dir="auto"], div._ak8j, span._ak8k, div._ak8m');
-            
-            if (nameEl) {
-              const name = nameEl.getAttribute('title') || nameEl.innerText;
-              if (!name || name === 'You') return;
+            try {
+              // Try to find name in various elements
+              const nameEl = el.querySelector('span[title], span._ak8q, span.aria-label, div._ak8j span, span[dir="auto"], span._ao3e');
+              // Try to find phone or secondary info
+              const phoneEl = el.querySelector('span[dir="auto"], div._ak8j, span._ak8k, div._ak8m, span._ak8n');
+              
+              if (nameEl) {
+                const name = nameEl.getAttribute('title') || nameEl.innerText;
+                if (!name || name === 'You' || name.includes('typing...')) return;
 
-              let phone = '';
-              if (phoneEl) {
-                phone = phoneEl.innerText.replace(/[^0-9+]/g, '');
-              }
+                let phone = '';
+                if (phoneEl) {
+                  phone = phoneEl.innerText.replace(/[^0-9+]/g, '');
+                }
 
-              // If name looks like a phone number, use it as phone
-              if (name.match(/^\\+?[0-9\\s-]{10,}$/)) {
-                phone = name.replace(/[^0-9+]/g, '');
-              }
+                // If name looks like a phone number, use it as phone
+                if (name.match(/^\\+?[0-9\\s-]{10,}$/)) {
+                  phone = name.replace(/[^0-9+]/g, '');
+                }
 
-              // Only add if we have a name and it's not a duplicate
-              if (name && !contacts.find(c => c.name === name || (phone && c.phone === phone))) {
-                contacts.push({
-                  id: 'wa_' + Math.random().toString(36).substring(2, 9),
-                  name: name,
-                  phone: phone || '',
-                  status: 'active',
-                  lastSeen: 'Just now',
-                  tags: ['WhatsApp Import']
-                });
+                // Only add if we have a name and it's not a duplicate
+                if (name && !contacts.find(c => c.name === name || (phone && c.phone === phone))) {
+                  contacts.push({
+                    id: 'wa_' + Math.random().toString(36).substring(2, 9),
+                    name: name,
+                    phone: phone || '',
+                    status: 'active',
+                    lastSeen: 'Just now',
+                    tags: ['WhatsApp Import']
+                  });
+                }
               }
-            }
+            } catch (e) {}
           });
           
-          console.log('Scraped ' + contacts.length + ' contacts from WhatsApp Web');
+          console.log('Digital Sam: Scraped ' + contacts.length + ' contacts');
           return contacts;
         }
 
@@ -544,14 +551,24 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
         function injectUI() {
           try {
             if (!window.location.href.includes('web.whatsapp.com')) return;
-            if (!document.body) return;
+            
+            // Wait for body to be available
+            if (!document.body) {
+              console.log("Digital Sam: Waiting for document.body...");
+              return;
+            }
             
             const sidebarExists = !!document.getElementById('ds-sidebar');
             const fabExists = !!document.getElementById('ds-fab');
             
             if (sidebarExists && fabExists) return;
 
-            console.log("Digital Sam: Injecting UI components...", { sidebarExists, fabExists });
+            console.log("Digital Sam: Injecting UI components...", { 
+              sidebarExists, 
+              fabExists, 
+              url: window.location.href,
+              readyState: document.readyState 
+            });
 
           const styleId = 'ds-styles';
           if (!document.getElementById(styleId)) {
@@ -680,8 +697,9 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                 <div class="ds-section">
                   <span class="ds-title">Quick Actions</span>
                   <button class="ds-btn" id="ds-scrape-btn">📥 Scrape & Sync Contacts</button>
+                  <button class="ds-btn ds-btn-outline" id="ds-bulk-btn" style="margin-top: 8px; border-color: #ff9d00; color: #ff9d00;">📢 Bulk Message (Beta)</button>
                   <a href="\${CRM_URL}" target="_blank" style="text-decoration: none;">
-                    <button class="ds-btn ds-btn-outline">🚀 Open CRM Dashboard</button>
+                    <button class="ds-btn ds-btn-outline" style="margin-top: 8px;">🚀 Open CRM Dashboard</button>
                   </a>
                 </div>
   
@@ -712,6 +730,38 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                 });
               } else {
                 alert("No contacts found. Make sure your chat list is visible.");
+              }
+            };
+
+            document.getElementById('ds-bulk-btn').onclick = () => {
+              const text = document.getElementById('ds-rephrase-input').value;
+              if (!text) {
+                alert("Please enter a message in the AI Rephrase box first!");
+                return;
+              }
+              const contacts = scrapeContacts();
+              if (contacts.length === 0) {
+                alert("No contacts found to send to!");
+                return;
+              }
+              
+              if (confirm(\`Send this message to \${contacts.length} visible contacts?\\n\\nWarning: Sending too many messages too fast can get you banned. Use with caution.\`)) {
+                let sent = 0;
+                const sendNext = async (index) => {
+                  if (index >= contacts.length) {
+                    alert(\`Bulk send complete! Sent to \${sent} contacts.\`);
+                    return;
+                  }
+                  const c = contacts[index];
+                  if (c.phone) {
+                    const res = await sendMessage(c.phone, text);
+                    if (res.success) sent++;
+                    // Wait between messages to avoid ban
+                    await new Promise(r => setTimeout(r, 3000 + Math.random() * 2000));
+                  }
+                  sendNext(index + 1);
+                };
+                sendNext(0);
               }
             };
           }
@@ -791,24 +841,24 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
               const templates = result.templates || [
                 { 
                   name: '🎓 Accepted', 
-                  body: 'Dear _______, 🎓\n\n🎉 Congratulations! You have been granted admission to study _______________at Miva Open University.\n\nWhy complete your enrollment early?\n\n📦 The Official Welcome Package: Be among the first to receive your physical Miva ID Card, official admission letter, and a collection of exclusive Miva gift items delivered straight to you.\n\n🎓 Early Masterclass Access: Get a head start with masterclasses led by industry experts with "Prime Experience."\n\n💻 LMS Familiarization: Gain early entry to the Learning Management System (LMS) to navigate your tools and dashboard with confidence.\n\n🤝 The Community Centre: Join our vibrant community hub to start networking with peers and faculty immediately.\n\n🎁 Miva Student Perks: Enjoy exclusive discounts on AI, Educational, and Entertainment tools, including Gemini Pro, Spotify, and Netflix.\n\n👥 Miva Buddies: Be paired with experienced student mentors who will walk you through every step of the process.\n\n📈 Career Advancement: Receive your official Admission and Enrollment letters early to facilitate discussions for job raises or promotions at your current workplace..\n\n⚠ Don’t miss these benefits!\n\nYou can watch our videos on youtube\n\n👉 https://www.youtube.com/@mivauniversity\n👉 https://youtu.be/wMnxQvSuAfg?si=TQz8zhvTdArnbgWq\n👉 https://www.youtube.com/live/HKupMBVxe_A?si=KoaA07jCpwduE5o5\n\n👉 Secure your spot today by making payment via our official portal:\n🔗 http://sis.miva.university' 
+                  body: 'Dear _______, 🎓\\n\\n🎉 Congratulations! You have been granted admission to study _______________at Miva Open University.\\n\\nWhy complete your enrollment early?\\n\\n📦 The Official Welcome Package: Be among the first to receive your physical Miva ID Card, official admission letter, and a collection of exclusive Miva gift items delivered straight to you.\\n\\n🎓 Early Masterclass Access: Get a head start with masterclasses led by industry experts with "Prime Experience."\\n\\n💻 LMS Familiarization: Gain early entry to the Learning Management System (LMS) to navigate your tools and dashboard with confidence.\\n\\n🤝 The Community Centre: Join our vibrant community hub to start networking with peers and faculty immediately.\\n\\n🎁 Miva Student Perks: Enjoy exclusive discounts on AI, Educational, and Entertainment tools, including Gemini Pro, Spotify, and Netflix.\\n\\n👥 Miva Buddies: Be paired with experienced student mentors who will walk you through every step of the process.\\n\\n📈 Career Advancement: Receive your official Admission and Enrollment letters early to facilitate discussions for job raises or promotions at your current workplace..\\n\\n⚠ Don’t miss these benefits!\\n\\nYou can watch our videos on youtube\\n\\n👉 https://www.youtube.com/@mivauniversity\\n👉 https://youtu.be/wMnxQvSuAfg?si=TQz8zhvTdArnbgWq\\n👉 https://www.youtube.com/live/HKupMBVxe_A?si=KoaA07jCpwduE5o5\\n\\n👉 Secure your spot today by making payment via our official portal:\\n🔗 http://sis.miva.university' 
                 },
                 { 
                   name: '⏳ Follow-up', 
-                  body: 'Good day, this is ................, an Application Specialist from MIVA Open University.\nYour admission slot is still reserved.\nWe need you to confirm when you will proceed with your payment.\nKindly update us here on WhatsApp so we can activate your admission.\nThank you.' 
+                  body: 'Good day, this is ................, an Application Specialist from MIVA Open University.\\nYour admission slot is still reserved.\\nWe need you to confirm when you will proceed with your payment.\\nKindly update us here on WhatsApp so we can activate your admission.\\nThank you.' 
                 },
                 { 
                   name: '💰 Tuition Breakdown', 
-                  body: 'Here’s a quick breakdown of our tuition discount options for Undergraduate:\n\nTuition is ₦175,000 per semester (₦350,000 per year if paying per semester).\n\nIf you pay upfront for the full year, it’s ₦300,000 — you save ₦50,000 instantly.\n\nWe also have bigger multi-year discounts:\n• 2 Years – ₦570,000 (Save ₦130,000)\n• 3 Years – ₦810,000 (Save ₦240,000)\n• 4 Years – ₦990,000 (Save ₦410,000 — best value)\n\nThe more years you pay for upfront, the more you save.' 
+                  body: 'Here’s a quick breakdown of our tuition discount options for Undergraduate:\\n\\nTuition is ₦175,000 per semester (₦350,000 per year if paying per semester).\\n\\nIf you pay upfront for the full year, it’s ₦300,000 — you save ₦50,000 instantly.\\n\\nWe also have bigger multi-year discounts:\\n• 2 Years – ₦570,000 (Save ₦130,000)\\n• 3 Years – ₦810,000 (Save ₦240,000)\\n• 4 Years – ₦990,000 (Save ₦410,000 — best value)\\n\\nThe more years you pay for upfront, the more you save.' 
                 }
               ];
 
               const incompleteTemplates = [
-                { name: 'Missing Doc', body: 'Hello, this is ..................., an Application Specialist from MIVA Open University.\nWe noticed that a required document is missing from your application.\nWe need you to provide [insert document].\nKindly send it here on WhatsApp so we can proceed with your review.\nThank you.' },
-                { name: 'O-Level', body: 'Good day, this is ..............., an Application Specialist from MIVA Open University.\nWe noticed that you did not upload your O-Level result.\nWe need you to provide your O-Level result (original certificate or web printout).\nKindly send it here on WhatsApp so we can proceed with your review.\nThank you.' },
-                { name: 'Unclear Doc', body: 'Hi, this is ....................., an Application Specialist from MIVA Open University.\nWe noticed that the document you uploaded is unclear.\nWe need you to provide a clear and visible copy of [insert document].\nKindly send it here on WhatsApp so we can proceed with your review.\nThank you.' },
-                { name: 'Name Discrepancy', body: 'Hello, this is ......................., an Application Specialist from MIVA Open University.\nWe noticed a difference in the name across your documents.\nWe need you to provide an affidavit, newspaper publication, or marriage certificate to resolve this.\nKindly send them here on WhatsApp so we can proceed with your review.\nThank you.' },
-                { name: 'CV Required', body: 'Hello, this is ................, an Application Specialist from MIVA Open University.\nWe noticed that your application requires a CV.\nWe need you to provide your updated CV showing relevant work experience.\nKindly send it here on WhatsApp so we can proceed with your review.\nThank you.' }
+                { name: 'Missing Doc', body: 'Hello, this is ..................., an Application Specialist from MIVA Open University.\\nWe noticed that a required document is missing from your application.\\nWe need you to provide [insert document].\\nKindly send it here on WhatsApp so we can proceed with your review.\\nThank you.' },
+                { name: 'O-Level', body: 'Good day, this is ..............., an Application Specialist from MIVA Open University.\\nWe noticed that you did not upload your O-Level result.\\nWe need you to provide your O-Level result (original certificate or web printout).\\nKindly send it here on WhatsApp so we can proceed with your review.\\nThank you.' },
+                { name: 'Unclear Doc', body: 'Hi, this is ....................., an Application Specialist from MIVA Open University.\\nWe noticed that the document you uploaded is unclear.\\nWe need you to provide a clear and visible copy of [insert document].\\nKindly send it here on WhatsApp so we can proceed with your review.\\nThank you.' },
+                { name: 'Name Discrepancy', body: 'Hello, this is ......................., an Application Specialist from MIVA Open University.\\nWe noticed a difference in the name across your documents.\\nWe need you to provide an affidavit, newspaper publication, or marriage certificate to resolve this.\\nKindly send them here on WhatsApp so we can proceed with your review.\\nThank you.' },
+                { name: 'CV Required', body: 'Hello, this is ................, an Application Specialist from MIVA Open University.\\nWe noticed that your application requires a CV.\\nWe need you to provide your updated CV showing relevant work experience.\\nKindly send it here on WhatsApp so we can proceed with your review.\\nThank you.' }
               ];
 
               let html = '<span class="ds-title">Standard Templates</span>';
@@ -886,12 +936,27 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
         });
 
         // Initial injection
-        injectUI();
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          injectUI();
+        } else {
+          window.addEventListener('DOMContentLoaded', injectUI);
+        }
         
-        // Periodic check to ensure UI is present (WhatsApp Web is an SPA that re-renders)
+        // MutationObserver to handle dynamic DOM changes in WhatsApp Web
+        const observer = new MutationObserver((mutations) => {
+          const sidebar = document.getElementById('ds-sidebar');
+          const fab = document.getElementById('ds-fab');
+          if (!sidebar || !fab) {
+            injectUI();
+          }
+        });
+        
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        
+        // Periodic check as a fallback
         setInterval(injectUI, 3000);
         
-        console.log("Digital Sam Anti-Ban Extension Loaded");
+        console.log("Digital Sam Anti-Ban Extension Fully Loaded");
       `;
       
       zip.file("content.js", contentJs);
