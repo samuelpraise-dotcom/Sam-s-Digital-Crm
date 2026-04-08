@@ -901,7 +901,6 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
               alert("Please open a chat first!");
             }
           }
-        }
 
         // Listen for messages from popup or background
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
