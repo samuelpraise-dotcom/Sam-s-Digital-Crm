@@ -101,12 +101,28 @@ export default function BulkSender({ contacts, onMessageSent }: BulkSenderProps)
     if (!messageText) return;
     setIsRephrasing(true);
     
-    // Simulate a brief delay for "processing" feel
-    setTimeout(() => {
-      const rephrased = localRephrase(messageText);
-      setMessageText(rephrased);
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: `Rephrase this message for a professional WhatsApp communication, making it sound friendly and trustworthy. Keep it concise. Message: ${messageText}` 
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setMessageText(data.text);
+      } else {
+        // Fallback to local rephrase if API fails
+        setMessageText(localRephrase(messageText));
+      }
+    } catch (error) {
+      console.error("AI Rephrase Error:", error);
+      setMessageText(localRephrase(messageText));
+    } finally {
       setIsRephrasing(false);
-    }, 800);
+    }
   };
 
   const startNewCampaign = () => {

@@ -138,7 +138,12 @@ export default function ContactManager({ contacts, setContacts, isSyncing }: Con
             </motion.div>
           )}
           <button 
-            onClick={() => alert("To sync contacts:\n1. Open WhatsApp Web\n2. Use the Digital Sam extension to 'Import' contacts\n3. Click 'Sync to CRM' in the extension popup.")}
+            onClick={() => {
+              window.postMessage({ type: 'DS_PING_EXTENSION' }, '*');
+              setTimeout(() => {
+                alert("To sync contacts:\n1. Open WhatsApp Web\n2. Use the Digital Sam extension to 'Import' contacts\n3. Click 'Sync to CRM' in the extension popup.");
+              }, 500);
+            }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#151619] border border-[#2d2e33] text-xs font-bold uppercase tracking-wider hover:border-[#00ff9d]/50 transition-all"
           >
             <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin text-[#00ff9d]")} /> 

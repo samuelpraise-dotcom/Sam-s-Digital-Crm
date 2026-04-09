@@ -51,7 +51,11 @@ const CHAR_MAP: { [key: string]: string[] } = {
   'i': ['і', 'і', 'і'],
 };
 
-export default function AntiBanTool() {
+interface AntiBanToolProps {
+  sessions?: any[];
+}
+
+export default function AntiBanTool({ sessions = [] }: AntiBanToolProps) {
   const [message, setMessage] = useState('');
   const [processedMessage, setProcessedMessage] = useState('');
   const [settings, setSettings] = useState<AntiBanSettings>(DEFAULT_SETTINGS);
@@ -239,7 +243,9 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
         const USER_AGENTS = [
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+          "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
         ];
         const APP_URL = "${window.location.origin}";
 
@@ -249,19 +255,64 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           if (!storage.extensionId) {
             chrome.storage.local.set({ 
               activeUA: USER_AGENTS[0], 
+              activeIP: "192.168.1." + Math.floor(Math.random() * 254 + 1),
               rotationEnabled: true,
               extensionId: 'ext_' + Math.random().toString(36).substr(2, 9)
             });
           }
+          updateDynamicRules();
           reportSession();
         });
+
+        async function updateDynamicRules() {
+          const { activeUA, rotationEnabled } = await chrome.storage.local.get(['activeUA', 'rotationEnabled']);
+          if (!rotationEnabled || !activeUA) return;
+
+          const ruleId = 1;
+          await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [ruleId],
+            addRules: [{
+              id: ruleId,
+              priority: 1,
+              action: {
+                type: 'modifyHeaders',
+                requestHeaders: [{
+                  header: 'user-agent',
+                  operation: 'set',
+                  value: activeUA
+                }]
+              },
+              condition: {
+                urlFilter: 'web.whatsapp.com',
+                resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
+              }
+            }]
+          });
+          console.log("User-Agent Rule Updated:", activeUA);
+        }
+
+        async function rotateIdentity() {
+          const { rotationEnabled } = await chrome.storage.local.get(['rotationEnabled']);
+          if (!rotationEnabled) return;
+
+          const newUA = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+          const newIP = "192.168." + Math.floor(Math.random() * 254) + "." + Math.floor(Math.random() * 254 + 1);
+          
+          await chrome.storage.local.set({ activeUA: newUA, activeIP: newIP });
+          await updateDynamicRules();
+          console.log("Identity Rotated. New Virtual IP:", newIP);
+          reportSession();
+        }
+
+        // Rotate every 15 minutes
+        setInterval(rotateIdentity, 15 * 60 * 1000);
 
         // Periodic session reporting
         setInterval(reportSession, 30000);
 
         async function reportSession() {
           try {
-            const storage = await chrome.storage.local.get(['extensionId', 'userId']);
+            const storage = await chrome.storage.local.get(['extensionId', 'userId', 'activeUA', 'activeIP']);
             const response = await fetch(\`\${APP_URL}/api/report-session\`, {
               method: 'POST',
               headers: { 
@@ -271,7 +322,8 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
               body: JSON.stringify({
                 userId: storage.userId || 'Extension User',
                 systemInfo: {
-                  ua: navigator.userAgent,
+                  ua: storage.activeUA || navigator.userAgent,
+                  ip: storage.activeIP || '127.0.0.1',
                   platform: navigator.platform,
                   version: '1.0.7'
                 },
@@ -387,7 +439,7 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
         setInterval(() => {
           chrome.storage.local.get(['rotationEnabled'], (res) => {
             if (res.rotationEnabled) {
-              console.log("Rotating Virtual Proxy Node...");
+              rotateIdentity();
             }
           });
         }, 300000);
@@ -574,19 +626,19 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
           if (!document.getElementById(styleId)) {
             const style = document.createElement('style');
             style.id = styleId;
-            style.innerHTML = \`
+            style.innerHTML = ${'`'}
             #ds-sidebar {
               position: fixed;
               right: -350px;
               top: 0;
               width: 320px;
               height: 100vh;
-              background: #0a0a0c;
-              border-left: 1px solid #2d2e33;
+              background: #0B0F14;
+              border-left: 1px solid #1F2937;
               z-index: 9999;
               transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-              font-family: 'JetBrains Mono', monospace;
-              color: #fff;
+              font-family: 'Inter', sans-serif;
+              color: #F9FAFB;
               display: flex;
               flex-direction: column;
               box-shadow: -10px 0 30px rgba(0,0,0,0.5);
@@ -598,98 +650,113 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
               bottom: 20px !important;
               width: 50px !important;
               height: 50px !important;
-              background: #00ff9d !important;
+              background: linear-gradient(135deg, #22C55E, #16A34A) !important;
               border-radius: 50% !important;
               display: flex !important;
               align-items: center !important;
               justify-content: center !important;
               cursor: pointer !important;
               z-index: 2147483647 !important;
-              box-shadow: 0 0 20px rgba(0,255,157,0.4) !important;
+              box-shadow: 0 10px 20px rgba(34,197,94,0.3) !important;
               font-weight: bold !important;
-              color: #0a0a0c !important;
-              transition: transform 0.2s !important;
+              color: #fff !important;
+              transition: all 0.2s !important;
               font-size: 14px !important;
               visibility: visible !important;
               opacity: 1 !important;
             }
-            #ds-fab:hover { transform: scale(1.1); }
-            .ds-header { padding: 16px; border-bottom: 1px solid #2d2e33; background: #151619; display: flex; justify-content: space-between; align-items: center; }
-            .ds-content { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; scrollbar-color: #2d2e33 transparent; }
+            #ds-fab:hover { transform: scale(1.1) translateY(-2px); box-shadow: 0 15px 25px rgba(34,197,94,0.4) !important; }
+            .ds-header { padding: 16px; border-bottom: 1px solid #1F2937; background: #0F172A; display: flex; justify-content: space-between; align-items: center; }
+            .ds-content { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; scrollbar-color: #1F2937 transparent; }
             .ds-section { margin-bottom: 24px; }
-            .ds-title { font-size: 10px; color: #8e9299; text-transform: uppercase; margin-bottom: 12px; display: block; letter-spacing: 1px; font-weight: bold; }
-            .ds-card { background: #151619; border: 1px solid #2d2e33; border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
-            .ds-card:hover { border-color: #00ff9d; background: #1a1b1e; transform: translateY(-2px); }
-            .ds-card-title { font-size: 11px; font-weight: bold; color: #00ff9d; margin-bottom: 6px; }
+            .ds-title { font-size: 11px; color: #9CA3AF; text-transform: uppercase; margin-bottom: 12px; display: block; letter-spacing: 0.05em; font-weight: 600; }
+            .ds-card { background: #0F172A; border: 1px solid #1F2937; border-radius: 12px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+            .ds-card:hover { border-color: #22C55E; background: #111827; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+            .ds-card-title { font-size: 12px; font-weight: 600; color: #22C55E; margin-bottom: 6px; }
             .ds-card-body { 
-              font-size: 10px; 
-              color: #8e9299; 
+              font-size: 11px; 
+              color: #9CA3AF; 
               display: block; 
               overflow: hidden; 
-              line-height: 1.4; 
+              line-height: 1.5; 
               white-space: pre-wrap;
-              max-height: 4.2em; /* Show about 3 lines */
+              max-height: 4.5em; 
               text-overflow: ellipsis;
             }
-            .ds-btn { width: 100%; background: #00ff9d; color: #0a0a0c; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; transition: opacity 0.2s; }
-            .ds-btn:hover { opacity: 0.9; }
-            .ds-btn-outline { background: transparent; border: 1px solid #00ff9d; color: #00ff9d; }
-            .ds-close { cursor: pointer; color: #8e9299; font-size: 24px; line-height: 1; }
+            .ds-btn { width: 100%; background: linear-gradient(135deg, #22C55E, #16A34A); color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+            .ds-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(34,197,94,0.3); }
+            .ds-btn-outline { background: transparent; border: 1px solid #1F2937; color: #F9FAFB; }
+            .ds-btn-outline:hover { background: #1F2937; border-color: #22C55E; color: #22C55E; }
+            .ds-close { cursor: pointer; color: #9CA3AF; font-size: 24px; line-height: 1; }
             .ds-close:hover { color: #fff; }
+            
+            .ds-input, .ds-textarea {
+              width: 100%;
+              background: #020617;
+              border: 1px solid #1F2937;
+              border-radius: 10px;
+              padding: 10px;
+              color: #fff;
+              font-size: 12px;
+              font-family: 'Inter', sans-serif;
+              transition: border-color 0.2s;
+            }
+            .ds-input:focus, .ds-textarea:focus {
+              outline: none;
+              border-color: #3B82F6;
+            }
             
             /* Header Button */
             .ds-header-btn {
-              background: #00ff9d;
-              color: #0a0a0c;
-              padding: 6px 12px;
-              border-radius: 4px;
-              font-size: 10px;
-              font-weight: bold;
+              background: #22C55E;
+              color: #fff;
+              padding: 6px 14px;
+              border-radius: 8px;
+              font-size: 11px;
+              font-weight: 600;
               cursor: pointer;
               margin-left: 12px;
-              text-transform: uppercase;
-              box-shadow: 0 0 10px rgba(0,255,157,0.2);
+              box-shadow: 0 4px 10px rgba(34,197,94,0.2);
               transition: all 0.2s;
             }
-            .ds-header-btn:hover { transform: translateY(-1px); box-shadow: 0 0 15px rgba(0,255,157,0.4); }
-            \`;
+            .ds-header-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(34,197,94,0.3); }
+            ${'`'};
             document.head.appendChild(style);
           }
 
           if (!sidebarExists) {
             const sidebar = document.createElement('div');
             sidebar.id = 'ds-sidebar';
-            sidebar.innerHTML = \`
+            sidebar.innerHTML = ${'`'}
               <div class="ds-header">
                 <div style="display: flex; flex-direction: column;">
-                  <span style="color: #00ff9d; font-weight: bold; font-size: 12px; letter-spacing: 1px;">DIGITAL SAM CRM</span>
-                  <span style="font-size: 8px; color: #8e9299;">SECURITY PROTOCOL v1.0.5</span>
+                  <span style="color: #22C55E; font-weight: bold; font-size: 14px; letter-spacing: -0.02em;">Digital Sam CRM</span>
+                  <span style="font-size: 9px; color: #9CA3AF; font-weight: 500;">PREMIUM PROTOCOL v1.1.0</span>
                 </div>
                 <span class="ds-close" id="ds-close-btn">&times;</span>
               </div>
               <div class="ds-content">
                 <div class="ds-section">
-                  <span class="ds-title">Security Status</span>
-                  <div style="background: #151619; border: 1px solid #2d2e33; border-radius: 8px; padding: 12px; font-size: 10px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                      <span style="color: #8e9299;">Anti-Ban Engine</span>
-                      <span style="color: #00ff9d;">ACTIVE</span>
+                  <div style="background: #0F172A; border: 1px solid #1F2937; border-radius: 12px; padding: 14px; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                      <span style="color: #9CA3AF; font-weight: 500;">System Status</span>
+                      <span style="color: #22C55E; font-weight: 600;">OPTIMAL</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                      <span style="color: #8e9299;">UA Spoofing</span>
-                      <span style="color: #00ff9d;">ENABLED</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                      <span style="color: #9CA3AF; font-weight: 500;">Delivery Health</span>
+                      <span style="color: #22C55E; font-weight: 600;">97%</span>
                     </div>
-                    <div style="height: 4px; background: #2d2e33; border-radius: 2px; margin-top: 12px; overflow: hidden;">
-                      <div style="height: 100%; background: #00ff9d; width: 75%;"></div>
+                    <div style="height: 6px; background: #1F2937; border-radius: 3px; margin-top: 12px; overflow: hidden;">
+                      <div style="height: 100%; background: linear-gradient(to right, #22C55E, #16A34A); width: 97%;"></div>
                     </div>
                   </div>
                 </div>
   
                 <div class="ds-section">
-                  <span class="ds-title">AI Rephrase Tool</span>
-                  <textarea id="ds-rephrase-input" style="width: 100%; height: 60px; background: #151619; border: 1px solid #2d2e33; color: #fff; border-radius: 6px; padding: 8px; font-size: 10px; resize: none; margin-bottom: 8px;" placeholder="Enter text to rephrase..."></textarea>
-                  <div style="display: flex; gap: 8px;">
-                    <button class="ds-btn" id="ds-rephrase-btn" style="flex: 2; margin-top: 0;">✨ Rephrase</button>
+                  <span class="ds-title">Compose Message</span>
+                  <textarea id="ds-rephrase-input" class="ds-textarea" style="height: 100px;" placeholder="Hello {name}, enter text to rephrase..."></textarea>
+                  <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button class="ds-btn" id="ds-rephrase-btn" style="flex: 2; margin-top: 0;">✨ Rephrase AI</button>
                     <button class="ds-btn ds-btn-outline" id="ds-insert-rephrase-btn" style="flex: 1; margin-top: 0;">Insert</button>
                   </div>
                 </div>
@@ -697,9 +764,9 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                 <div class="ds-section">
                   <span class="ds-title">Quick Actions</span>
                   <button class="ds-btn" id="ds-scrape-btn">📥 Scrape & Sync Contacts</button>
-                  <button class="ds-btn ds-btn-outline" id="ds-bulk-btn" style="margin-top: 8px; border-color: #ff9d00; color: #ff9d00;">📢 Bulk Message (Beta)</button>
-                  <a href="\${CRM_URL}" target="_blank" style="text-decoration: none;">
-                    <button class="ds-btn ds-btn-outline" style="margin-top: 8px;">🚀 Open CRM Dashboard</button>
+                  <button class="ds-btn ds-btn-outline" id="ds-bulk-btn" style="margin-top: 10px; border-color: #F59E0B; color: #F59E0B;">📢 Bulk Message (Beta)</button>
+                  <a href="${CRM_URL}" target="_blank" style="text-decoration: none;">
+                    <button class="ds-btn ds-btn-outline" style="margin-top: 10px; width: 100%;">🚀 Open CRM Dashboard</button>
                   </a>
                 </div>
   
@@ -710,10 +777,10 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                   </div>
                 </div>
               </div>
-              <div style="padding: 16px; border-top: 1px solid #2d2e33; font-size: 9px; color: #4a4a4a; text-align: center; background: #151619;">
-                CONNECTED TO CLOUD CRM
+              <div style="padding: 16px; border-top: 1px solid #1F2937; font-size: 10px; color: #6B7280; text-align: center; background: #0F172A; font-weight: 500; letter-spacing: 0.02em;">
+                SECURE CLOUD CRM CONNECTION
               </div>
-            \`;
+            ${'`'};
             document.body.appendChild(sidebar);
             
             document.getElementById('ds-close-btn').onclick = () => sidebar.classList.remove('open');
@@ -862,20 +929,20 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
               ];
 
               let html = '<span class="ds-title">Standard Templates</span>';
-              html += templates.map(t => \`
+              html += templates.map(t => ${'`'}
                 <div class="ds-card" data-body="\${t.body.replace(/"/g, '&quot;')}">
                   <div class="ds-card-title">\${t.name}</div>
                   <div class="ds-card-body">\${t.body.replace(/\\n/g, '<br/>')}</div>
                 </div>
-              \`).join('');
+              ${'`'}).join('');
 
               html += '<span class="ds-title">Incomplete (Sub-Templates)</span>';
               html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">';
-              html += incompleteTemplates.map(t => \`
+              html += incompleteTemplates.map(t => ${'`'}
                 <div class="ds-card" style="margin-bottom: 0; padding: 8px;" data-body="\${t.body.replace(/"/g, '&quot;')}">
                   <div class="ds-card-title" style="font-size: 9px; margin-bottom: 0;">\${t.name}</div>
                 </div>
-              \`).join('');
+              ${'`'}).join('');
               html += '</div>';
 
               container.innerHTML = html;
@@ -1525,11 +1592,13 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
                             <div className="text-[8px] text-[#8e9299] uppercase">Current Proxy</div>
-                            <div className="text-[10px] font-mono text-white">192.168.1.104:8080</div>
+                            <div className="text-[10px] font-mono text-white">
+                              {sessions[0]?.systemInfo?.ip || "192.168.1.104:8080"}
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <div className="text-[8px] text-[#8e9299] uppercase">Rotation Interval</div>
-                            <div className="text-[10px] font-mono text-white">Every 5 messages</div>
+                            <div className="text-[10px] font-mono text-white">Every 15 minutes</div>
                           </div>
                         </div>
                         <button className="w-full py-2 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[10px] font-bold uppercase tracking-widest hover:border-[#00ff9d]/50 transition-all">
@@ -1543,7 +1612,7 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                           <div className="px-2 py-0.5 rounded bg-[#00ff9d]/10 text-[#00ff9d] text-[8px] font-mono">ACTIVE</div>
                         </div>
                         <div className="text-[10px] font-mono text-[#8e9299] break-all p-2 bg-[#0a0a0c] rounded border border-[#2d2e33]">
-                          Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
+                          {sessions[0]?.systemInfo?.ua || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
                         </div>
                         <div className="flex gap-2">
                           <button className="flex-1 py-2 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[10px] font-bold uppercase tracking-widest hover:border-[#00ff9d]/50 transition-all">

@@ -226,10 +226,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-white font-sans selection:bg-[#00ff9d]/30 selection:text-[#00ff9d]">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)]/30 selection:text-[var(--accent-primary)]">
       {/* Background Grid */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#2d2e33_1px,transparent_1px),linear-gradient(to_bottom,#2d2e33_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-5">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border-color)_1px,transparent_1px),linear-gradient(to_bottom,var(--border-color)_1px,transparent_1px)] bg-[size:40px_40px]" />
       </div>
 
       {/* Sidebar Overlay for Mobile */}
@@ -248,23 +248,23 @@ export default function App() {
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed top-0 left-0 z-50 h-full bg-[#151619] border-r border-[#2d2e33] transition-all duration-300 ease-in-out",
+          "fixed top-0 left-0 z-50 h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)] transition-all duration-300 ease-in-out",
           isSidebarOpen ? "w-64 translate-x-0" : "w-20 -translate-x-full lg:translate-x-0"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 flex items-center gap-3 border-b border-[#2d2e33]">
-            <div className="p-2 rounded-lg bg-[#00ff9d] text-[#0a0a0c]">
+          <div className="p-6 flex items-center gap-3 border-b border-[var(--border-color)]">
+            <div className="p-2 rounded-lg bg-[var(--accent-primary)] text-[var(--bg-primary)]">
               <Cpu className="w-5 h-5" />
             </div>
             {isSidebarOpen && (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="font-mono font-bold text-lg tracking-tighter"
+                className="font-sans font-bold text-lg tracking-tight"
               >
-                DIGITAL<span className="text-[#00ff9d]">SAM</span>
+                DIGITAL<span className="text-[var(--accent-primary)]">SAM</span>
               </motion.div>
             )}
           </div>
@@ -278,18 +278,18 @@ export default function App() {
                 className={cn(
                   "w-full flex items-center gap-3 p-3 rounded-xl transition-all group relative",
                   activeView === item.id 
-                    ? "bg-[#00ff9d]/10 text-[#00ff9d] border border-[#00ff9d]/20" 
-                    : "text-[#8e9299] hover:bg-[#2d2e33] hover:text-white border border-transparent"
+                    ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20" 
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-white border border-transparent"
                 )}
               >
-                <item.icon className={cn("w-5 h-5", activeView === item.id ? "text-[#00ff9d]" : "group-hover:text-white")} />
+                <item.icon className={cn("w-5 h-5", activeView === item.id ? "text-[var(--accent-primary)]" : "group-hover:text-white")} />
                 {isSidebarOpen && (
-                  <span className="text-xs font-bold uppercase tracking-widest">{item.label}</span>
+                  <span className="text-xs font-semibold tracking-wide">{item.label}</span>
                 )}
                 {activeView === item.id && (
                   <motion.div 
                     layoutId="active-pill"
-                    className="absolute left-0 w-1 h-6 bg-[#00ff9d] rounded-r-full"
+                    className="absolute left-0 w-1 h-6 bg-[var(--accent-primary)] rounded-r-full"
                   />
                 )}
               </button>
@@ -297,14 +297,14 @@ export default function App() {
           </nav>
 
           {/* User Profile / Logout */}
-          <div className="p-4 border-t border-[#2d2e33]">
+          <div className="p-4 border-t border-[var(--border-color)]">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 p-3 rounded-xl text-[#8e9299] hover:bg-red-500/10 hover:text-red-500 transition-all group"
+              className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-500 transition-all group"
             >
               <LogOut className="w-5 h-5 group-hover:text-red-500" />
               {isSidebarOpen && (
-                <span className="text-xs font-bold uppercase tracking-widest">Logout</span>
+                <span className="text-xs font-semibold tracking-wide">Logout</span>
               )}
             </button>
           </div>
@@ -319,34 +319,34 @@ export default function App() {
         )}
       >
         {/* Top Header */}
-        <header className="h-20 border-b border-[#2d2e33] bg-[#0a0a0c]/80 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between">
+        <header className="h-20 border-b border-[var(--border-color)] bg-[var(--bg-primary)]/80 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded-lg bg-[#151619] border border-[#2d2e33] hover:border-[#00ff9d]/50 transition-all"
+              className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent-primary)]/50 transition-all"
             >
               {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
-            <div className="h-6 w-px bg-[#2d2e33]" />
-            <div className="text-xs font-mono text-[#8e9299] uppercase tracking-widest">
-              System Status: <span className="text-[#00ff9d] font-bold">Optimal</span>
+            <div className="h-6 w-px bg-[var(--border-color)]" />
+            <div className="text-xs font-sans text-[var(--text-secondary)] uppercase tracking-widest">
+              System Status: <span className="text-[var(--accent-primary)] font-bold">Optimal</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e9299]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
               <input 
                 type="text" 
                 placeholder="Global search..."
-                className="pl-10 pr-4 py-2 rounded-lg bg-[#151619] border border-[#2d2e33] focus:border-[#00ff9d] outline-none text-xs font-mono w-64"
+                className="pl-10 pr-4 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] focus:border-[var(--accent-secondary)] outline-none text-xs w-64"
               />
             </div>
-            <button className="p-2 rounded-lg bg-[#151619] border border-[#2d2e33] relative">
-              <Bell className="w-4 h-4 text-[#8e9299]" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#00ff9d] rounded-full border border-[#151619]" />
+            <button className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] relative">
+              <Bell className="w-4 h-4 text-[var(--text-secondary)]" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full border border-[var(--bg-card)]" />
             </button>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00ff9d] to-[#00ff9d]/50 flex items-center justify-center text-[#0a0a0c] font-bold text-xs">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center text-white font-bold text-xs">
               SP
             </div>
           </div>
@@ -362,7 +362,7 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeView === 'antiban' && <AntiBanTool />}
+              {activeView === 'antiban' && <AntiBanTool sessions={activeSessions} />}
               {activeView === 'contacts' && <ContactManager contacts={contacts} setContacts={setContacts} isSyncing={isSyncing} />}
               {activeView === 'bulk' && <BulkSender contacts={contacts} onMessageSent={addMessageLog} />}
               {activeView === 'templates' && <MessageTemplates />}
@@ -378,12 +378,12 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <LayoutDashboard className="w-4 h-4 text-[#00ff9d]" />
-                      <h2 className="text-xs font-bold uppercase tracking-widest text-[#8e9299]">System Overview</h2>
+                      <LayoutDashboard className="w-4 h-4 text-[var(--accent-primary)]" />
+                      <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">System Overview</h2>
                     </div>
                     <button 
                       onClick={clearMessageHistory}
-                      className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#151619] border border-[#2d2e33] text-[#8e9299] text-[10px] font-bold uppercase tracking-wider hover:border-red-500/50 hover:text-red-500 transition-all"
+                      className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] text-[10px] font-bold uppercase tracking-wider hover:border-red-500/50 hover:text-red-500 transition-all"
                     >
                       <X className="w-3 h-3" /> Clear History
                     </button>
@@ -396,23 +396,23 @@ export default function App() {
                       { label: 'Total Contacts', value: contacts.length.toLocaleString(), trend: '+5%', icon: Users },
                       { label: 'Security Score', value: '98%', trend: 'Optimal', icon: Shield },
                     ].map((stat, i) => (
-                      <div key={i} className="p-6 rounded-xl bg-[#151619] border border-[#2d2e33] space-y-2 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-[#00ff9d]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      <div key={i} className="p-6 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-2 relative overflow-hidden group shadow-lg hover:shadow-[var(--accent-primary)]/10 transition-all">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-[var(--accent-primary)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                         <div className="flex items-center justify-between">
-                          <stat.icon className="w-5 h-5 text-[#00ff9d]" />
-                          <span className="text-[10px] font-mono text-[#00ff9d]">{stat.trend}</span>
+                          <stat.icon className="w-5 h-5 text-[var(--accent-primary)]" />
+                          <span className="text-[10px] font-sans font-semibold text-[var(--accent-primary)]">{stat.trend}</span>
                         </div>
-                        <div className="text-2xl font-bold font-mono tracking-tight">{stat.value}</div>
-                        <div className="text-[10px] uppercase font-bold tracking-widest text-[#8e9299]">{stat.label}</div>
+                        <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+                        <div className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)]">{stat.label}</div>
                       </div>
                     ))}
                   </div>
                   
-                  <div className="p-6 rounded-xl bg-[#151619] border border-[#2d2e33]">
+                  <div className="p-6 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xl">
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-[#00ff9d]" />
-                        <h2 className="text-xs font-bold uppercase tracking-widest text-[#8e9299]">Transmission Analytics</h2>
+                        <TrendingUp className="w-4 h-4 text-[var(--accent-primary)]" />
+                        <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Transmission Analytics</h2>
                       </div>
                       <div className="flex items-center gap-2">
                         {['24H', '7D', '30D'].map((range) => (
@@ -420,7 +420,7 @@ export default function App() {
                             key={range}
                             className={cn(
                               "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                              range === '24H' ? "bg-[#00ff9d] text-[#0a0a0c]" : "bg-[#0a0a0c] border border-[#2d2e33] text-[#8e9299] hover:border-[#00ff9d]/30"
+                              range === '24H' ? "bg-[var(--accent-primary)] text-white" : "bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
                             )}
                           >
                             {range}
@@ -438,36 +438,36 @@ export default function App() {
                               <stop offset="95%" stopColor="#00ff9d" stopOpacity={0}/>
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#2d2e33" vertical={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
                           <XAxis 
                             dataKey="time" 
-                            stroke="#4a4a4a" 
+                            stroke="var(--text-muted)" 
                             fontSize={10} 
                             tickLine={false} 
                             axisLine={false}
-                            tick={{ fill: '#8e9299', fontFamily: 'monospace' }}
+                            tick={{ fill: 'var(--text-secondary)', fontFamily: 'Inter' }}
                           />
                           <YAxis 
-                            stroke="#4a4a4a" 
+                            stroke="var(--text-muted)" 
                             fontSize={10} 
                             tickLine={false} 
                             axisLine={false}
-                            tick={{ fill: '#8e9299', fontFamily: 'monospace' }}
+                            tick={{ fill: 'var(--text-secondary)', fontFamily: 'Inter' }}
                           />
                           <Tooltip 
                             contentStyle={{ 
-                              backgroundColor: '#151619', 
-                              border: '1px solid #2d2e33',
+                              backgroundColor: 'var(--bg-card)', 
+                              border: '1px solid var(--border-color)',
                               borderRadius: '8px',
                               fontSize: '10px',
-                              fontFamily: 'monospace'
+                              fontFamily: 'Inter'
                             }}
-                            itemStyle={{ color: '#00ff9d' }}
+                            itemStyle={{ color: 'var(--accent-primary)' }}
                           />
                           <Area 
                             type="monotone" 
                             dataKey="sent" 
-                            stroke="#00ff9d" 
+                            stroke="var(--accent-primary)" 
                             fillOpacity={1} 
                             fill="url(#colorSent)" 
                             strokeWidth={2}
@@ -584,7 +584,7 @@ export default function App() {
         </div>
 
         {/* Footer */}
-        <footer className="p-8 border-t border-[#2d2e33] flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-mono text-[#8e9299] uppercase tracking-widest">
+        <footer className="p-8 border-t border-[var(--border-color)] flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-sans text-[var(--text-muted)] uppercase tracking-widest">
           <div>© 2026 DIGITAL SAM CRM MESSENGER • ALL RIGHTS RESERVED</div>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:text-white transition-colors">Privacy Protocol</a>

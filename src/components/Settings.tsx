@@ -17,9 +17,12 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'api' | 'extension' | 'hosting'>('general');
   const [isSaving, setIsSaving] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [isHostingUnlocked, setIsHostingUnlocked] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [accessError, setAccessError] = useState(false);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -334,13 +337,63 @@ export default function Settings() {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-8"
             >
-              <section className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-[#00ff9d]" /> Publish & Local Hosting
-                  </h3>
-                  <div className="px-2 py-0.5 rounded bg-[#00ff9d]/10 text-[#00ff9d] text-[8px] font-mono">v4.2.0 SERVER READY</div>
+              {!isHostingUnlocked ? (
+                <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                  <div className="p-4 rounded-full bg-[#00ff9d]/10 border border-[#00ff9d]/20">
+                    <Lock className="w-8 h-8 text-[#00ff9d]" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-white">Restricted Access</h3>
+                    <p className="text-[10px] text-[#8e9299] font-mono">Enter authorization code to access hosting parameters.</p>
+                  </div>
+                  <div className="w-full max-w-xs space-y-4">
+                    <input 
+                      type="password"
+                      value={accessCode}
+                      onChange={(e) => {
+                        setAccessCode(e.target.value);
+                        setAccessError(false);
+                        if (e.target.value === '1960') {
+                          setIsHostingUnlocked(true);
+                        }
+                      }}
+                      placeholder="••••"
+                      className={cn(
+                        "w-full px-4 py-3 rounded-lg bg-[#0a0a0c] border text-center text-lg font-mono tracking-[1em] outline-none transition-all",
+                        accessError ? "border-red-500" : "border-[#2d2e33] focus:border-[#00ff9d]"
+                      )}
+                    />
+                    {accessError && (
+                      <p className="text-[8px] text-red-500 font-bold uppercase tracking-widest text-center">Invalid Authorization Code</p>
+                    )}
+                    <button 
+                      onClick={() => {
+                        if (accessCode === '1960') {
+                          setIsHostingUnlocked(true);
+                        } else {
+                          setAccessError(true);
+                          setAccessCode('');
+                        }
+                      }}
+                      className="w-full py-3 rounded-lg bg-[#00ff9d] text-[#0a0a0c] text-[10px] font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,255,157,0.4)] transition-all"
+                    >
+                      Authorize Agent
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <section className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-[#00ff9d]" /> Publish & Local Hosting
+                    </h3>
+                    <button 
+                      onClick={() => setIsHostingUnlocked(false)}
+                      className="px-2 py-1 rounded bg-red-500/10 text-red-500 text-[8px] font-mono uppercase font-bold hover:bg-red-500/20 transition-all"
+                    >
+                      Lock Section
+                    </button>
+                  </div>
 
                 <div className="p-6 rounded-xl bg-[#0a0a0c] border border-[#2d2e33] space-y-4">
                   <div className="flex items-start gap-4">
@@ -415,10 +468,11 @@ export default function Settings() {
                   </div>
                 </div>
               </section>
-            </motion.div>
-          )}
-        </div>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
+  </div>
   );
 }
