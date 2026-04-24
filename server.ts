@@ -69,6 +69,7 @@ async function startServer() {
       if (type === "extension") {
         activeSessions.set(socket.id, {
           id: socket.id,
+          type: "extension",
           userId: userId || "Anonymous",
           systemInfo: systemInfo || {},
           lastSeen: new Date().toISOString(),
@@ -76,6 +77,18 @@ async function startServer() {
         });
         console.log(`Extension identified: ${socket.id} (${userId})`);
         addLog(`New extension node connected: ${socket.id.slice(0, 8)}`, 'success');
+        broadcastToAdmins();
+      } else if (type === "desktop-bridge") {
+        activeSessions.set(socket.id, {
+          id: socket.id,
+          type: "desktop-bridge",
+          userId: userId || "Local Agent",
+          systemInfo: systemInfo || {},
+          lastSeen: new Date().toISOString(),
+          status: "online"
+        });
+        console.log(`Desktop Bridge identified: ${socket.id}`);
+        addLog(`Native Desktop Bridge connected: ${socket.id.slice(0, 8)}`, 'success');
         broadcastToAdmins();
       } else if (type === "admin") {
         socket.join("admins");
@@ -86,7 +99,7 @@ async function startServer() {
       }
     });
 
-    // Handle status updates from extension
+    // Handle status updates from extension or bridge
     socket.on("status_update", (data) => {
       const session = activeSessions.get(socket.id);
       if (session) {
@@ -96,6 +109,18 @@ async function startServer() {
           lastSeen: new Date().toISOString()
         });
         broadcastToAdmins();
+      }
+    });
+
+    // Relay command to desktop bridge
+    socket.on("relay_to_desktop", (data) => {
+      // Find a desktop bridge session
+      const bridgeSession = Array.from(activeSessions.values()).find(s => s.type === "desktop-bridge");
+      if (bridgeSession) {
+        io.to(bridgeSession.id).emit("execute_command", data);
+        addLog(`Relaying command to Native Bridge: ${data.action}`, 'system');
+      } else {
+        socket.emit("bridge_error", { message: "No active Native Desktop Bridge found." });
       }
     });
 

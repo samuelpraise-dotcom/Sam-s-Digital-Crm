@@ -62,7 +62,7 @@ export default function AntiBanTool({ sessions = [] }: AntiBanToolProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [logs, setLogs] = useState<string[]>(['System initialized...', 'Ready for processing.']);
-  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'bypass'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'bypass' | 'native'>('preview');
   const [isLive, setIsLive] = useState(false);
 
   const addLog = (msg: string) => {
@@ -74,41 +74,76 @@ export default function AntiBanTool({ sessions = [] }: AntiBanToolProps) {
 
   const getManifest = () => JSON.stringify({
     manifest_version: 3,
-    name: "Digital Sam Anti-Ban",
-    version: "1.0.0",
-    description: "Anti-Ban tool for WhatsApp and CRM messengers.",
-    permissions: ["activeTab", "scripting"],
-    action: { default_popup: "popup.html" },
-    content_scripts: [{ matches: ["https://web.whatsapp.com/*"], js: ["content.js"] }]
+    name: "Digital Sam CRM Anti-Ban",
+    version: "1.0.8",
+    description: "Advanced CRM Messenger Security & Anti-Ban Protocol",
+    permissions: ["activeTab", "scripting", "declarativeNetRequest", "storage", "tabs"],
+    host_permissions: [
+      "https://web.whatsapp.com/*",
+      "https://*.whatsapp.net/*",
+      "https://*.run.app/*",
+      "https://*.onrender.com/*",
+      "http://localhost:*/*",
+      CRM_URL + "/*"
+    ],
+    action: { 
+      default_popup: "popup.html"
+    },
+    background: {
+      service_worker: "background.js"
+    },
+    content_scripts: [
+      {
+        matches: ["https://web.whatsapp.com/*"],
+        js: ["content.js"],
+        run_at: "document_start",
+        all_frames: true
+      }
+    ]
   }, null, 2);
 
-  const getContentJs = () => `const CONFIG = ${JSON.stringify(settings, null, 2)};
-const ZERO_WIDTH_CHARS = ${JSON.stringify(ZERO_WIDTH_CHARS)};
-const EMOJIS = ${JSON.stringify(EMOJIS)};
-
-function process(text) {
-  let result = text;
-  if (CONFIG.useSpintax) {
-    result = result.replace(/\\{([^{}]+)\\}/g, (_, choices) => {
-      const options = choices.split('|');
-      return options[Math.floor(Math.random() * options.length)];
-    });
-  }
-  ${settings.useZeroWidth ? `
-  if (CONFIG.useZeroWidth) {
-    const chars = result.split('');
-    const count = Math.ceil((CONFIG.randomnessLevel / 100) * chars.length * 0.2);
-    for (let i = 0; i < count; i++) {
-      const index = Math.floor(Math.random() * chars.length);
-      const zwChar = ZERO_WIDTH_CHARS[Math.floor(Math.random() * ZERO_WIDTH_CHARS.length)];
-      chars.splice(index, 0, zwChar);
+  const getContentJs = () => `
+(function() {
+  const CONFIG = ${JSON.stringify(settings, null, 2)};
+  const ZERO_WIDTH_CHARS = ${JSON.stringify(ZERO_WIDTH_CHARS)};
+  
+  // 1. Internal Navigator Sync
+  chrome.storage.local.get(['activeUA'], (res) => {
+    if (res.activeUA) {
+      const ua = res.activeUA;
+      try {
+        // Use a more robust property descriptor
+        const platform = ua.includes('Macintosh') ? 'MacIntel' : 'Win32';
+        
+        Object.defineProperty(navigator, 'userAgent', {
+          get: function() { return ua; },
+          configurable: true
+        });
+        Object.defineProperty(navigator, 'appVersion', {
+          get: function() { return ua; },
+          configurable: true
+        });
+        Object.defineProperty(navigator, 'platform', {
+          get: function() { return platform; },
+          configurable: true
+        });
+      } catch (e) {}
     }
-    result = chars.join('');
-  }` : ''}
-  return result;
-}
+  });
 
-console.log("Digital Sam Anti-Ban Extension Loaded");`;
+  // 2. Anti-Fingerprinting (Subtle)
+  try {
+    const originalGetParameter = WebGLRenderingContext.prototype.getParameter;
+    WebGLRenderingContext.prototype.getParameter = function(parameter) {
+      // 37445: UNMASKED_VENDOR_WEBGL, 37446: UNMASKED_RENDERER_WEBGL
+      if (parameter === 37445) return "Intel Inc.";
+      if (parameter === 37446) return "Intel(R) UHD Graphics";
+      return originalGetParameter.apply(this, arguments);
+    };
+  } catch (e) {}
+
+  console.log("Digital Sam Stealth Engine Activity: Monitoring");
+})();`;
 
   const processMessage = useCallback((text: string, config: AntiBanSettings) => {
     if (!text) return '';
@@ -241,11 +276,10 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
       // Background Script (UA Spoofing & Proxy Logic)
       const backgroundJs = `
         const USER_AGENTS = [
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
-          "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
+          // Modern, high-reputation Chrome strings that match the underlying Chromium engine
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         ];
         const APP_URL = "${window.location.origin}";
 
@@ -283,7 +317,22 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                 }]
               },
               condition: {
-                urlFilter: 'web.whatsapp.com',
+                urlFilter: '*whatsapp.com*',
+                resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
+              }
+            }, {
+              id: 2,
+              priority: 1,
+              action: {
+                type: 'modifyHeaders',
+                requestHeaders: [{
+                  header: 'user-agent',
+                  operation: 'set',
+                  value: activeUA
+                }]
+              },
+              condition: {
+                urlFilter: '*whatsapp.net*',
                 resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
               }
             }]
@@ -292,15 +341,23 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
         }
 
         async function rotateIdentity() {
-          const { rotationEnabled } = await chrome.storage.local.get(['rotationEnabled']);
-          if (!rotationEnabled) return;
+          const { rotationEnabled, lastRotation } = await chrome.storage.local.get(['rotationEnabled', 'lastRotation']);
+          
+          // Only rotate if enabled and at least 2 hours have passed
+          // Frequent rotation is a massive red flag for WhatsApp
+          const twoHours = 2 * 60 * 60 * 1000;
+          if (!rotationEnabled || (lastRotation && Date.now() - lastRotation < twoHours)) return;
 
           const newUA = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
           const newIP = "192.168." + Math.floor(Math.random() * 254) + "." + Math.floor(Math.random() * 254 + 1);
           
-          await chrome.storage.local.set({ activeUA: newUA, activeIP: newIP });
+          await chrome.storage.local.set({ 
+            activeUA: newUA, 
+            activeIP: newIP,
+            lastRotation: Date.now()
+          });
           await updateDynamicRules();
-          console.log("Identity Rotated. New Virtual IP:", newIP);
+          console.log("Stealth Identity Stabilized:", newUA);
           reportSession();
         }
 
@@ -325,7 +382,8 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                   ua: storage.activeUA || navigator.userAgent,
                   ip: storage.activeIP || '127.0.0.1',
                   platform: navigator.platform,
-                  version: '1.0.7'
+                  isPWA: window.matchMedia('(display-mode: standalone)').matches,
+                  version: '1.0.8'
                 },
                 status: 'Active'
               })
@@ -1458,6 +1516,16 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
             </div>
           </div>
 
+          <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-start gap-3">
+            <Shield className="w-4 h-4 text-blue-400 mt-0.5" />
+            <div>
+              <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Stealth Protocol V5 Active</div>
+              <p className="text-[9px] text-[#8e9299] font-mono leading-relaxed mt-1">
+                Aggressive fingerprinting reduced. Now using "High Reputation" Chrome strings to optimize page loading and account safety.
+              </p>
+            </div>
+          </div>
+
           {/* System Logs */}
           <div className="p-4 rounded-xl bg-[#151619] border border-[#2d2e33] font-mono text-[10px]">
             <div className="flex items-center gap-2 mb-3 text-[#8e9299]">
@@ -1519,13 +1587,13 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                     Extension Code
                   </button>
                   <button 
-                    onClick={() => setActiveTab('bypass')}
+                    onClick={() => setActiveTab('native')}
                     className={cn(
                       "text-[10px] uppercase font-bold tracking-widest transition-colors",
-                      activeTab === 'bypass' ? "text-[#00ff9d]" : "text-[#8e9299] hover:text-white"
+                      activeTab === 'native' ? "text-[#00ff9d]" : "text-[#8e9299] hover:text-white"
                     )}
                   >
-                    Restriction Bypass
+                    Native Bridge
                   </button>
                 </div>
                 
@@ -1559,9 +1627,190 @@ console.log("Digital Sam Anti-Ban Extension Loaded");`;
                 <div className="absolute inset-0 bg-gradient-to-br from-[#00ff9d]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 
                 <div className="relative z-10 h-full overflow-auto custom-scrollbar">
-                  {activeTab === 'preview' ? (
+                  {activeTab === 'native' && (
+                    <div className="space-y-6">
+                      <div className="p-4 rounded-lg bg-[#151619] border border-[#2d2e33] space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[10px] uppercase font-bold text-[#00ff9d]">Native Desktop Bridge (Level 3)</div>
+                          <div className="px-2 py-0.5 rounded bg-[#00ff9d]/10 text-[#00ff9d] text-[8px] font-mono">EXPERIMENTAL</div>
+                        </div>
+                        <p className="text-[10px] text-[#8e9299] font-mono leading-relaxed">
+                          The Native Bridge allows you to control the **actual WhatsApp Desktop App** installed on your computer. It uses OS-level automation to type and send messages, bypassing browser-based detection entirely.
+                        </p>
+                        
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-bold text-white uppercase tracking-widest">1. Install Dependencies</div>
+                          <pre className="p-3 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[9px] text-[#00ff9d] font-mono">
+                            pip install pyautogui socketio-client keyboard
+                          </pre>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-bold text-white uppercase tracking-widest">2. Run Local Agent</div>
+                          <div className="relative group">
+                            <pre className="p-3 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[9px] text-[#8e9299] font-mono overflow-x-auto max-h-60 custom-scrollbar">
+{`import socketio
+import pyautogui
+import time
+import keyboard
+
+sio = socketio.Client()
+
+@sio.event
+def connect():
+    print("Connected to Digital Sam CRM")
+    sio.emit('identify', {
+        'type': 'desktop-bridge',
+        'userId': 'Desktop Agent',
+        'systemInfo': {'platform': 'Native Desktop'}
+    })
+
+@sio.on('execute_command')
+def on_message(data):
+    if data['action'] == 'sendMessage':
+        phone = data['phone']
+        text = data['text']
+        print(f"Sending message to {phone}...")
+        
+        # Open WhatsApp (Assumes it's already open)
+        # 1. Search for contact
+        pyautogui.hotkey('ctrl', 'f')
+        time.sleep(0.5)
+        pyautogui.write(phone)
+        time.sleep(1)
+        pyautogui.press('enter')
+        time.sleep(1)
+        
+        # 2. Type message
+        pyautogui.write(text)
+        time.sleep(0.5)
+        pyautogui.press('enter')
+        
+        sio.emit('status_update', {'status': 'Message Sent'})
+
+sio.connect('${CRM_URL}')
+sio.wait()`}
+                            </pre>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(`import socketio\nimport pyautogui\nimport time\nimport keyboard\n\nsio = socketio.Client()\n\n@sio.event\ndef connect():\n    print("Connected to Digital Sam CRM")\n    sio.emit('identify', {\n        'type': 'desktop-bridge',\n        'userId': 'Desktop Agent',\n        'systemInfo': {'platform': 'Native Desktop'}\n    })\n\n@sio.on('execute_command')\ndef on_message(data):\n    if data['action'] == 'sendMessage':\n        phone = data['phone']\n        text = data['text']\n        print(f"Sending message to {phone}...")\n        \n        # Open WhatsApp (Assumes it's already open)\n        # 1. Search for contact\n        pyautogui.hotkey('ctrl', 'f')\n        time.sleep(0.5)\n        pyautogui.write(phone)\n        time.sleep(1)\n        pyautogui.press('enter')\n        time.sleep(1)\n        \n        # 2. Type message\n        pyautogui.write(text)\n        time.sleep(0.5)\n        pyautogui.press('enter')\n        \n        sio.emit('status_update', {'status': 'Message Sent'})\n\nsio.connect('${CRM_URL}')\nsio.wait()`);
+                                addLog("Python Bridge code copied.");
+                              }}
+                              className="absolute top-2 right-2 p-2 rounded bg-[#151619] border border-[#2d2e33] text-[#8e9299] hover:text-[#00ff9d] opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-lg bg-[#00ff9d]/5 border border-[#00ff9d]/20 flex items-start gap-3">
+                          <AlertCircle className="w-4 h-4 text-[#00ff9d] mt-0.5" />
+                          <div>
+                            <div className="text-[10px] font-bold text-[#00ff9d] uppercase tracking-wider">Operational Requirement</div>
+                            <p className="text-[9px] text-[#8e9299] font-mono leading-relaxed mt-1">
+                              Keep the WhatsApp Desktop app visible on your screen. The bridge uses mouse and keyboard simulation to perform actions.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                     <div className="text-sm font-mono whitespace-pre-wrap break-all">
                       {processedMessage || <span className="text-[#2d2e33] italic">Processing output will appear here...</span>}
+                    </div>
+                  ) : activeTab === 'native' ? (
+                    <div className="space-y-6">
+                      <div className="p-4 rounded-lg bg-[#151619] border border-[#2d2e33] space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[10px] uppercase font-bold text-[#00ff9d]">Native Desktop Bridge (Level 3)</div>
+                          <div className="px-2 py-0.5 rounded bg-[#00ff9d]/10 text-[#00ff9d] text-[8px] font-mono">EXPERIMENTAL</div>
+                        </div>
+                        <p className="text-[10px] text-[#8e9299] font-mono leading-relaxed">
+                          The Native Bridge allows you to control the **actual WhatsApp Desktop App**. Since it uses the real application, **User-Agent spoofing is unnecessary**—your traffic is 100% legitimate. To avoid bans, this bridge implements **Human-Like Input Simulation** (variable typing speeds and random pauses).
+                        </p>
+                        
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-bold text-white uppercase tracking-widest">1. Install Dependencies</div>
+                          <pre className="p-3 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[9px] text-[#00ff9d] font-mono">
+                            pip install pyautogui socketio-client keyboard random
+                          </pre>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-bold text-white uppercase tracking-widest">2. Run Local Agent</div>
+                          <div className="relative group">
+                            <pre className="p-3 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[9px] text-[#8e9299] font-mono overflow-x-auto max-h-60 custom-scrollbar">
+{`import socketio
+import pyautogui
+import time
+import random
+
+sio = socketio.Client()
+
+def human_delay(min_s=0.5, max_s=2.0):
+    time.sleep(random.uniform(min_s, max_s))
+
+def human_type(text):
+    for char in text:
+        pyautogui.write(char)
+        time.sleep(random.uniform(0.05, 0.2)) # Variable typing speed
+
+@sio.event
+def connect():
+    print("Connected to Digital Sam CRM - Native Bridge Active")
+    sio.emit('identify', {
+        'type': 'desktop-bridge',
+        'userId': 'Desktop Agent',
+        'systemInfo': {'platform': 'Native Desktop', 'security': 'Human-Simulation'}
+    })
+
+@sio.on('execute_command')
+def on_message(data):
+    if data['action'] == 'sendMessage':
+        phone = data['phone']
+        text = data['text']
+        print(f"Sending message to {phone}...")
+        
+        # 1. Search for contact
+        pyautogui.hotkey('ctrl', 'f')
+        human_delay(0.3, 0.7)
+        human_type(phone)
+        human_delay(1.0, 1.5)
+        pyautogui.press('enter')
+        human_delay(1.0, 2.0)
+        
+        # 2. Type message
+        human_type(text)
+        human_delay(0.5, 1.0)
+        pyautogui.press('enter')
+        
+        sio.emit('status_update', {'status': 'Sent via Native Bridge'})
+
+sio.connect('${CRM_URL}')
+sio.wait()`}
+                            </pre>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(`import socketio\nimport pyautogui\nimport time\nimport random\n\nsio = socketio.Client()\n\ndef human_delay(min_s=0.5, max_s=2.0):\n    time.sleep(random.uniform(min_s, max_s))\n\ndef human_type(text):\n    for char in text:\n        pyautogui.write(char)\n        time.sleep(random.uniform(0.05, 0.2))\n\n@sio.event\ndef connect():\n    print("Connected to Digital Sam CRM - Native Bridge Active")\n    sio.emit('identify', {\n        'type': 'desktop-bridge',\n        'userId': 'Desktop Agent',\n        'systemInfo': {'platform': 'Native Desktop', 'security': 'Human-Simulation'}\n    })\n\n@sio.on('execute_command')\ndef on_message(data):\n    if data['action'] == 'sendMessage':\n        phone = data['phone']\n        text = data['text']\n        print(f"Sending message to {phone}...")\n        \n        pyautogui.hotkey('ctrl', 'f')\n        human_delay(0.3, 0.7)\n        human_type(phone)\n        human_delay(1.0, 1.5)\n        pyautogui.press('enter')\n        human_delay(1.0, 2.0)\n        \n        human_type(text)\n        human_delay(0.5, 1.0)\n        pyautogui.press('enter')\n        \n        sio.emit('status_update', {'status': 'Sent via Native Bridge'})\n\nsio.connect('${CRM_URL}');\nsio.wait()`);
+                                addLog("Enhanced Python Bridge code copied.");
+                              }}
+                              className="absolute top-2 right-2 p-2 rounded bg-[#151619] border border-[#2d2e33] text-[#8e9299] hover:text-[#00ff9d] opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-lg bg-yellow-500/5 border border-yellow-500/20 flex items-start gap-3">
+                          <Shield className="w-4 h-4 text-yellow-500 mt-0.5" />
+                          <div>
+                            <div className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">IP Rotation Note</div>
+                            <p className="text-[9px] text-[#8e9299] font-mono leading-relaxed mt-1">
+                              Native apps use your system's network. For IP rotation, use a system-wide VPN or Proxy switcher. The bridge will inherit whatever IP your OS is currently using.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ) : activeTab === 'code' ? (
                     <div className="space-y-4">

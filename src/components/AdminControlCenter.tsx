@@ -97,19 +97,32 @@ export default function AdminControlCenter({ sessions, logs, stats }: AdminContr
                   </div>
                 </div>
                 
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="mt-4 grid grid-cols-4 gap-2">
                   <div className="p-2 rounded bg-[#151619] border border-[#2d2e33] text-center">
                     <div className="text-[8px] text-[#8e9299] uppercase">Status</div>
                     <div className="text-[10px] font-bold text-white uppercase tracking-tighter">{session.status || 'Active'}</div>
+                  </div>
+                  <div className="p-2 rounded bg-[#151619] border border-[#2d2e33] text-center">
+                    <div className="text-[8px] text-[#8e9299] uppercase">Mode</div>
+                    <div className={cn("text-[10px] font-bold uppercase tracking-tighter", 
+                      session.type === 'desktop-bridge' ? "text-yellow-500" :
+                      session.systemInfo?.isPWA ? "text-[#00ff9d]" : "text-blue-400"
+                    )}>
+                      {session.type === 'desktop-bridge' ? 'Native Bridge' : 
+                       session.systemInfo?.isPWA ? 'Desktop PWA' : 'Browser'}
+                    </div>
                   </div>
                   <div className="p-2 rounded bg-[#151619] border border-[#2d2e33] text-center">
                     <div className="text-[8px] text-[#8e9299] uppercase">Protocol</div>
                     <div className="text-[10px] font-bold text-[#00ff9d] uppercase tracking-tighter">Encrypted</div>
                   </div>
                   <div className="p-2 rounded bg-[#151619] border border-[#2d2e33] text-center">
-                    <div className="text-[8px] text-[#8e9299] uppercase">Region</div>
-                    <div className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Global</div>
+                    <div className="text-[8px] text-[#8e9299] uppercase">IP Node</div>
+                    <div className="text-[10px] font-bold text-yellow-400 uppercase tracking-tighter">{session.systemInfo?.ip?.split('.').slice(-1)[0] || '...'}</div>
                   </div>
+                </div>
+                <div className="mt-2 px-3 py-1.5 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[8px] font-mono text-[#4a4a4a] truncate">
+                  UA: {session.systemInfo?.ua}
                 </div>
               </div>
             )) : (
