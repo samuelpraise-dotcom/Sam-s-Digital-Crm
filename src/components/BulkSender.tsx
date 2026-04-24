@@ -108,18 +108,6 @@ export default function BulkSender({ contacts, onMessageSent }: BulkSenderProps)
       s.disconnect();
     };
   }, []);
-  const [sendingChannel, setSendingChannel] = useState<'extension' | 'native'>('extension');
-  const [socket, setSocket] = useState<any>(null);
-
-  useEffect(() => {
-    // Connect to socket for native bridge
-    const s = io(window.location.origin);
-    setSocket(s);
-    return () => {
-      s.disconnect();
-    };
-  }, []);
-
   const rephraseMessage = async () => {
     if (!messageText) return;
     setIsRephrasing(true);
@@ -294,33 +282,6 @@ export default function BulkSender({ contacts, onMessageSent }: BulkSenderProps)
               <div className="flex justify-between text-[8px] font-mono text-[#4a4a4a] uppercase tracking-widest">
                 <span>Variables: {"{name}"}</span>
                 <span>{messageText.length} Characters</span>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#0a0a0c] border border-[#2d2e33] space-y-3">
-              <div className="text-[10px] uppercase font-bold text-[#8e9299] tracking-widest flex items-center gap-2">
-                <Smartphone className="w-3 h-3 text-[#00ff9d]" /> Sending Channel
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => setSendingChannel('extension')}
-                  className={cn(
-                    "py-2 rounded border text-[8px] font-bold uppercase tracking-widest transition-all",
-                    sendingChannel === 'extension' ? "bg-[#00ff9d]/10 border-[#00ff9d] text-[#00ff9d]" : "bg-[#151619] border-[#2d2e33] text-[#4a4a4a] hover:border-[#8e9299]"
-                  )}
-                >
-                  Browser Ext
-                </button>
-                <button 
-                  onClick={() => setSendingChannel('native')}
-                  className={cn(
-                    "py-2 rounded border text-[8px] font-bold uppercase tracking-widest transition-all",
-                    sendingChannel === 'native' ? "bg-yellow-500/10 border-yellow-500 text-yellow-500" : "bg-[#151619] border-[#2d2e33] text-[#4a4a4a] hover:border-[#8e9299]"
-                  )}
-                >
-                  Native Bridge
-                </button>
               </div>
             </div>
 

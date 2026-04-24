@@ -1587,6 +1587,15 @@ export default function AntiBanTool({ sessions = [] }: AntiBanToolProps) {
                     Extension Code
                   </button>
                   <button 
+                    onClick={() => setActiveTab('bypass')}
+                    className={cn(
+                      "text-[10px] uppercase font-bold tracking-widest transition-colors",
+                      activeTab === 'bypass' ? "text-[#00ff9d]" : "text-[#8e9299] hover:text-white"
+                    )}
+                  >
+                    Bypass Engine
+                  </button>
+                  <button 
                     onClick={() => setActiveTab('native')}
                     className={cn(
                       "text-[10px] uppercase font-bold tracking-widest transition-colors",
@@ -1627,94 +1636,7 @@ export default function AntiBanTool({ sessions = [] }: AntiBanToolProps) {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#00ff9d]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 
                 <div className="relative z-10 h-full overflow-auto custom-scrollbar">
-                  {activeTab === 'native' && (
-                    <div className="space-y-6">
-                      <div className="p-4 rounded-lg bg-[#151619] border border-[#2d2e33] space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="text-[10px] uppercase font-bold text-[#00ff9d]">Native Desktop Bridge (Level 3)</div>
-                          <div className="px-2 py-0.5 rounded bg-[#00ff9d]/10 text-[#00ff9d] text-[8px] font-mono">EXPERIMENTAL</div>
-                        </div>
-                        <p className="text-[10px] text-[#8e9299] font-mono leading-relaxed">
-                          The Native Bridge allows you to control the **actual WhatsApp Desktop App** installed on your computer. It uses OS-level automation to type and send messages, bypassing browser-based detection entirely.
-                        </p>
-                        
-                        <div className="space-y-3">
-                          <div className="text-[10px] font-bold text-white uppercase tracking-widest">1. Install Dependencies</div>
-                          <pre className="p-3 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[9px] text-[#00ff9d] font-mono">
-                            pip install pyautogui socketio-client keyboard
-                          </pre>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="text-[10px] font-bold text-white uppercase tracking-widest">2. Run Local Agent</div>
-                          <div className="relative group">
-                            <pre className="p-3 rounded bg-[#0a0a0c] border border-[#2d2e33] text-[9px] text-[#8e9299] font-mono overflow-x-auto max-h-60 custom-scrollbar">
-{`import socketio
-import pyautogui
-import time
-import keyboard
-
-sio = socketio.Client()
-
-@sio.event
-def connect():
-    print("Connected to Digital Sam CRM")
-    sio.emit('identify', {
-        'type': 'desktop-bridge',
-        'userId': 'Desktop Agent',
-        'systemInfo': {'platform': 'Native Desktop'}
-    })
-
-@sio.on('execute_command')
-def on_message(data):
-    if data['action'] == 'sendMessage':
-        phone = data['phone']
-        text = data['text']
-        print(f"Sending message to {phone}...")
-        
-        # Open WhatsApp (Assumes it's already open)
-        # 1. Search for contact
-        pyautogui.hotkey('ctrl', 'f')
-        time.sleep(0.5)
-        pyautogui.write(phone)
-        time.sleep(1)
-        pyautogui.press('enter')
-        time.sleep(1)
-        
-        # 2. Type message
-        pyautogui.write(text)
-        time.sleep(0.5)
-        pyautogui.press('enter')
-        
-        sio.emit('status_update', {'status': 'Message Sent'})
-
-sio.connect('${CRM_URL}')
-sio.wait()`}
-                            </pre>
-                            <button 
-                              onClick={() => {
-                                navigator.clipboard.writeText(`import socketio\nimport pyautogui\nimport time\nimport keyboard\n\nsio = socketio.Client()\n\n@sio.event\ndef connect():\n    print("Connected to Digital Sam CRM")\n    sio.emit('identify', {\n        'type': 'desktop-bridge',\n        'userId': 'Desktop Agent',\n        'systemInfo': {'platform': 'Native Desktop'}\n    })\n\n@sio.on('execute_command')\ndef on_message(data):\n    if data['action'] == 'sendMessage':\n        phone = data['phone']\n        text = data['text']\n        print(f"Sending message to {phone}...")\n        \n        # Open WhatsApp (Assumes it's already open)\n        # 1. Search for contact\n        pyautogui.hotkey('ctrl', 'f')\n        time.sleep(0.5)\n        pyautogui.write(phone)\n        time.sleep(1)\n        pyautogui.press('enter')\n        time.sleep(1)\n        \n        # 2. Type message\n        pyautogui.write(text)\n        time.sleep(0.5)\n        pyautogui.press('enter')\n        \n        sio.emit('status_update', {'status': 'Message Sent'})\n\nsio.connect('${CRM_URL}')\nsio.wait()`);
-                                addLog("Python Bridge code copied.");
-                              }}
-                              className="absolute top-2 right-2 p-2 rounded bg-[#151619] border border-[#2d2e33] text-[#8e9299] hover:text-[#00ff9d] opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="p-4 rounded-lg bg-[#00ff9d]/5 border border-[#00ff9d]/20 flex items-start gap-3">
-                          <AlertCircle className="w-4 h-4 text-[#00ff9d] mt-0.5" />
-                          <div>
-                            <div className="text-[10px] font-bold text-[#00ff9d] uppercase tracking-wider">Operational Requirement</div>
-                            <p className="text-[9px] text-[#8e9299] font-mono leading-relaxed mt-1">
-                              Keep the WhatsApp Desktop app visible on your screen. The bridge uses mouse and keyboard simulation to perform actions.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {activeTab === 'preview' ? (
                     <div className="text-sm font-mono whitespace-pre-wrap break-all">
                       {processedMessage || <span className="text-[#2d2e33] italic">Processing output will appear here...</span>}
                     </div>
@@ -1791,7 +1713,8 @@ sio.wait()`}
                             </pre>
                             <button 
                               onClick={() => {
-                                navigator.clipboard.writeText(`import socketio\nimport pyautogui\nimport time\nimport random\n\nsio = socketio.Client()\n\ndef human_delay(min_s=0.5, max_s=2.0):\n    time.sleep(random.uniform(min_s, max_s))\n\ndef human_type(text):\n    for char in text:\n        pyautogui.write(char)\n        time.sleep(random.uniform(0.05, 0.2))\n\n@sio.event\ndef connect():\n    print("Connected to Digital Sam CRM - Native Bridge Active")\n    sio.emit('identify', {\n        'type': 'desktop-bridge',\n        'userId': 'Desktop Agent',\n        'systemInfo': {'platform': 'Native Desktop', 'security': 'Human-Simulation'}\n    })\n\n@sio.on('execute_command')\ndef on_message(data):\n    if data['action'] == 'sendMessage':\n        phone = data['phone']\n        text = data['text']\n        print(f"Sending message to {phone}...")\n        \n        pyautogui.hotkey('ctrl', 'f')\n        human_delay(0.3, 0.7)\n        human_type(phone)\n        human_delay(1.0, 1.5)\n        pyautogui.press('enter')\n        human_delay(1.0, 2.0)\n        \n        human_type(text)\n        human_delay(0.5, 1.0)\n        pyautogui.press('enter')\n        \n        sio.emit('status_update', {'status': 'Sent via Native Bridge'})\n\nsio.connect('${CRM_URL}');\nsio.wait()`);
+                                const pythonCode = "import socketio\nimport pyautogui\nimport time\nimport random\n\nsio = socketio.Client()\n\ndef human_delay(min_s=0.5, max_s=2.0):\n    time.sleep(random.uniform(min_s, max_s))\n\ndef human_type(text):\n    for char in text:\n        pyautogui.write(char)\n        time.sleep(random.uniform(0.05, 0.2))\n\n@sio.event\ndef connect():\n    print(\"Connected to Digital Sam CRM - Native Bridge Active\")\n    sio.emit('identify', {\n        'type': 'desktop-bridge',\n        'userId': 'Desktop Agent',\n        'systemInfo': {'platform': 'Native Desktop', 'security': 'Human-Simulation'}\n    })\n\n@sio.on('execute_command')\ndef on_message(data):\n    if data['action'] == 'sendMessage':\n        phone = data['phone']\n        text = data['text']\n        print(f\"Sending message to {phone}...\")\n        \n        pyautogui.hotkey('ctrl', 'f')\n        human_delay(0.3, 0.7)\n        human_type(phone)\n        human_delay(1.0, 1.5)\n        pyautogui.press('enter')\n        human_delay(1.0, 2.0)\n        \n        human_type(text)\n        human_delay(0.5, 1.0)\n        pyautogui.press('enter')\n        \n        sio.emit('status_update', {'status': 'Sent via Native Bridge'})\n\nsio.connect('" + CRM_URL + "')\nsio.wait()";
+                                navigator.clipboard.writeText(pythonCode);
                                 addLog("Enhanced Python Bridge code copied.");
                               }}
                               className="absolute top-2 right-2 p-2 rounded bg-[#151619] border border-[#2d2e33] text-[#8e9299] hover:text-[#00ff9d] opacity-0 group-hover:opacity-100 transition-all"
@@ -1812,26 +1735,7 @@ sio.wait()`}
                         </div>
                       </div>
                     </div>
-                  ) : activeTab === 'code' ? (
-                    <div className="space-y-4">
-                      <div>
-                        <div className="text-[8px] uppercase font-bold text-[#8e9299] mb-2 flex items-center gap-1.5">
-                          <Terminal className="w-2 h-2" /> manifest.json
-                        </div>
-                        <pre className="text-[11px] font-mono text-white/80 bg-[#151619] p-3 rounded-lg border border-[#2d2e33] overflow-x-auto">
-                          {getManifest()}
-                        </pre>
-                      </div>
-                      <div>
-                        <div className="text-[8px] uppercase font-bold text-[#8e9299] mb-2 flex items-center gap-1.5">
-                          <Terminal className="w-2 h-2" /> content.js
-                        </div>
-                        <pre className="text-[11px] font-mono text-white/80 bg-[#151619] p-3 rounded-lg border border-[#2d2e33] overflow-x-auto">
-                          {getContentJs()}
-                        </pre>
-                      </div>
-                    </div>
-                  ) : (
+                  ) : activeTab === 'bypass' ? (
                     <div className="space-y-6">
                       <div className="p-4 rounded-lg bg-[#151619] border border-[#2d2e33] space-y-4">
                         <div className="flex items-center justify-between">
@@ -1883,7 +1787,26 @@ sio.wait()`}
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : activeTab === 'code' ? (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-[8px] uppercase font-bold text-[#8e9299] mb-2 flex items-center gap-1.5">
+                          <Terminal className="w-2 h-2" /> manifest.json
+                        </div>
+                        <pre className="text-[11px] font-mono text-white/80 bg-[#151619] p-3 rounded-lg border border-[#2d2e33] overflow-x-auto">
+                          {getManifest()}
+                        </pre>
+                      </div>
+                      <div>
+                        <div className="text-[8px] uppercase font-bold text-[#8e9299] mb-2 flex items-center gap-1.5">
+                          <Terminal className="w-2 h-2" /> content.js
+                        </div>
+                        <pre className="text-[11px] font-mono text-white/80 bg-[#151619] p-3 rounded-lg border border-[#2d2e33] overflow-x-auto">
+                          {getContentJs()}
+                        </pre>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
                 
                 {/* Visual hardware details */}
