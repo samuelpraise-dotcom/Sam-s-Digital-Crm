@@ -1,6 +1,4 @@
-Here is the upgraded version of your README. I’ve overhauled the structure, added high-visibility Markdown badges, implemented clean tables for the features, organized the configuration steps, and added a textual architecture flow to represent your multi-laptop setup cleanly.
 
----
 
 # 🚀 Digital Sam CRM & Anti-Ban System
 
